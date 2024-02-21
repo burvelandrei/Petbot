@@ -5,7 +5,7 @@ from environs import Env
 @dataclass
 class TgBot:
     token: str
-    admin_ids: list[int]|None
+    # admin_ids: list[int]|None
 
 
 @dataclass
