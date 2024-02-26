@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from keyboards import inline_keyboards
+from keyboards.keyboards import main_menu_kb
 from lexicon.lexicon import LEXICON_HI
 
 # Нужно написать два фильтра, для фильтрации имени и номера!!!!!
@@ -50,6 +51,14 @@ async def yes_number(callback: CallbackQuery, state: FSMContext):
 async def number_save(message: Message, state: FSMContext):
     # Сохраняем номер в базу и перводим на следующий шаг
     # следующий шаг
+    await message.answer(text=LEXICON_HI["main_menu"], reply_markup=main_menu_kb)
+    await state.clear()
+
+@router.callback_query(F.data == "no_number", StateFilter(FSMprofile.number_request))
+async def yes_number(callback: CallbackQuery, state: FSMContext):
+    # Сохраняем то что пользователь отказался оставлять номер и перводим на следующий шаг
+    # следующий шаг
+    await callback.message.answer(text=LEXICON_HI["main_menu"], reply_markup=main_menu_kb)
     await state.clear()
 
 @router.message(StateFilter(FSMprofile.number_request))
