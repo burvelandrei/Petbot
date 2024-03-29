@@ -6,6 +6,7 @@ from aiogram.fsm.state import default_state, State, StatesGroup
 from keyboards import inline_keyboards
 from keyboards.keyboards import main_menu_kb
 from lexicon.lexicon import LEXICON_HI
+from config_bd.users import SQL
 
 # Нужно написать два фильтра, для фильтрации имени и номера!!!!!
 
@@ -18,7 +19,9 @@ class FSMprofile(StatesGroup):
 # Хэндлер на команду /start
 @router.message(CommandStart())
 async def process_start(message: Message):
+    s = SQL()
     await message.answer(text=LEXICON_HI["start"], reply_markup=inline_keyboards.name_request)
+    print(s.SELECT_USER('15'))
 
 
 @router.callback_query(F.data == "yes_name", StateFilter(default_state))
