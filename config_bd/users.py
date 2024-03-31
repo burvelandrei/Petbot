@@ -69,7 +69,7 @@ class SQL:
             self.engine.dispose()
             print(str(e))
 
-    def UPGRADE_username(self, telegram_id: str, username: str):
+    def UPDATE_username(self, telegram_id: str, username: str):
         conn = self.engine.connect()
         try:
             s = update(self.users).where(self.users.c.telegram_id == telegram_id).values(username=username)
@@ -83,7 +83,7 @@ class SQL:
             self.engine.dispose()
             print(str(e))
 
-    def UPGRADE_firstname(self, telegram_id: str, first_name: str):
+    def UPDATE_firstname(self, telegram_id: str, first_name: str):
         conn = self.engine.connect()
         try:
             s = update(self.users).where(self.users.c.telegram_id == telegram_id).values(first_name=first_name)
@@ -97,7 +97,7 @@ class SQL:
             self.engine.dispose()
             print(str(e))
 
-    def UPGRADE_lastname(self, telegram_id: str, last_name: str):
+    def UPDATE_lastname(self, telegram_id: str, last_name: str):
         conn = self.engine.connect()
         try:
             s = update(self.users).where(self.users.c.telegram_id == telegram_id).values(last_name=last_name)
@@ -111,7 +111,7 @@ class SQL:
             self.engine.dispose()
             print(str(e))
 
-    def UPGRADE_phonenumber(self, telegram_id: str, phone_number: str):
+    def UPDATE_phonenumber(self, telegram_id: str, phone_number: str):
         conn = self.engine.connect()
         try:
             s = update(self.users).where(self.users.c.telegram_id == telegram_id).values(phone_number=phone_number)

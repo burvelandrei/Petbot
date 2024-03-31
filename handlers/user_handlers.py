@@ -1,11 +1,13 @@
 from aiogram import Router, F
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.types import Message, CallbackQuery
+from aiogram.enums import ContentType
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram_dialog import DialogManager, StartMode, Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.kbd import Start, SwitchTo, Button, Back, Cancel
+from aiogram_dialog.widgets.kbd import Start, SwitchTo, Button, Back, Cancel, Group
+from aiogram_dialog.widgets.input import TextInput, MessageInput, ManagedTextInput
 
 import handlers.users_states as states
 from keyboards import inline_keyboards
@@ -40,6 +42,24 @@ async def process_start(message: Message, dialog_manager: DialogManager):
             data={"tg_id": message.from_user.id},
             mode=StartMode.RESET_STACK,
         )
+        await dialog_manager.start(
+            state=states.Begin_use.MAIN_MENU,
+            data={"tg_id": message.from_user.id},
+            mode=StartMode.RESET_STACK,
+        )
+
+
+async def correct_phone_number(
+    message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
+):
+    tg_id = dialog_manager.start_data["tg_id"]
+    s = SQL()
+    s.UPDATE_phonenumber(tg_id, text)
+    await dialog_manager.switch_to(states.Begin_use.MAIN_MENU)
+
+
+async def no_text(message: Message, dialog_manager: DialogManager, text: str):
+    await message.answer("Вы ввели вообще не текст")
 
 
 async def name_user_getter(dialog_manager: DialogManager, **kwargs):
@@ -81,4 +101,44 @@ repeat_use_window = Window(
 )
 
 
-begin_use_dialog = Dialog(begin_use_window, repeat_use_window)
+input_number_window = Window(
+    Const("Введите Ваш номер"),
+    TextInput(
+        id="age_input",
+        # type_factory=age_check,
+        on_success=correct_phone_number,  # пока отлавливаем только не текст, надо придумать функцию которая будет выбивать неправильный номер
+        # on_error=error_age_handler,
+    ),
+    MessageInput(func=no_text, content_types=ContentType.ANY),
+    state=states.Begin_use.INPUT_NUMBER,
+)
+
+
+main_menu_window = Window(
+    Const("Главное меню"),
+    Group(
+        Start(Const("Записаться"), id="sign_up", state=states.Sign_up.MAIN),
+        Start(
+            Const("Мои записи"), id="my_appointment", state=states.My_appointment.MAIN
+        ),
+        SwitchTo(
+            Const("Наши контакты"),
+            id="our_contacts",
+            state=states.Begin_use.OUR_CONTACTS,
+        ),
+        SwitchTo(
+            Const("Изменить номер"),
+            id="update_number",
+            state=states.Begin_use.INPUT_NUMBER,
+        ),
+        width=2,
+    ),
+    state=states.Begin_use.MAIN_MENU,
+)
+
+begin_use_dialog = Dialog(
+    begin_use_window,
+    repeat_use_window,
+    input_number_window,
+    main_menu_window,
+)
