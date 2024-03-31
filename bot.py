@@ -1,8 +1,10 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
+from aiogram_dialog import setup_dialogs
 from config_data.config import load_config, Config
 from handlers import user_handlers, other_handlers
+from handlers.user_handlers import begin_use_dialog
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +26,9 @@ async def main():
     dp = Dispatcher()
 
     dp.include_router(user_handlers.router)
+    dp.include_router(begin_use_dialog)
     dp.include_router(other_handlers.router)
+    setup_dialogs(dp)
 
     await bot.delete_webhook(drop_pending_updates=True)
     try:

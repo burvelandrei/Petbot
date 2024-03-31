@@ -3,6 +3,11 @@ from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
+from aiogram_dialog import DialogManager, StartMode, Window, Dialog
+from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.kbd import Start, SwitchTo, Button, Back, Cancel
+
+import handlers.users_states as states
 from keyboards import inline_keyboards
 from keyboards.keyboards import main_menu_kb
 from lexicon.lexicon import LEXICON_HI
@@ -13,90 +18,67 @@ from config_bd.users import SQL
 router = Router()
 
 
-class FSMprofile(StatesGroup):
-    name_request = State()
-    number_request = State()
-
-
 # Хэндлер на команду /start
 @router.message(CommandStart())
-async def process_start(message: Message):
+async def process_start(message: Message, dialog_manager: DialogManager):
     s = SQL()
     if s.SELECT_USER(message.from_user.id) is None:
         s.INSERT(
-            telegram_id=message.from_user.id,
-            username=message.from_user.username,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
+            message.from_user.id,
+            message.from_user.username,
+            message.from_user.first_name,
+            message.from_user.last_name,
+        )
+        await dialog_manager.start(
+            state=states.Begin_use.MAIN,
+            data={"tg_id": message.from_user.id},
+            mode=StartMode.RESET_STACK,
+        )
+    else:
+        await dialog_manager.start(
+            state=states.Begin_use.REPEAT_MAIN,
+            data={"tg_id": message.from_user.id},
+            mode=StartMode.RESET_STACK,
         )
 
-    await message.answer(
-        text=LEXICON_HI["start"], reply_markup=inline_keyboards.name_request
-    )
+
+async def name_user_getter(dialog_manager: DialogManager, **kwargs):
+    s = SQL()
+    tg_id = dialog_manager.start_data["tg_id"]
+    user_db = s.SELECT_USER(tg_id)
+    username = user_db[1]
+    first_name = user_db[2]
+    last_name = user_db[3]
+    name_user = ""
+    if first_name is None and last_name is None:
+        name_user = username
+    elif last_name is None:
+        name_user = first_name
+    else:
+        name_user = f"{first_name} {last_name}"
+    return {"name_user": name_user}
 
 
-@router.callback_query(F.data == "yes_name", StateFilter(default_state))
-async def name_request(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text(text=LEXICON_HI["yes_name"])
-    await callback.answer()
-    await state.set_state(FSMprofile.name_request)
+begin_use_window = Window(
+    Format(
+        "Привет {name_user}.\n"
+        "Я бот салона красоты, "
+        "здесь ты можешь записаться к мастеру.\n"
+        "Для начала записи, оставь нам свой номер\n",
+    ),
+    SwitchTo(
+        Const("Ввести номер"), id="input_number", state=states.Begin_use.INPUT_NUMBER
+    ),
+    getter=name_user_getter,
+    state=states.Begin_use.MAIN,
+)
 
 
-@router.message(F.text, StateFilter(FSMprofile.name_request))
-async def number_request(message: Message, state: FSMContext):
-    # Сохраняем имя в базу
-    await message.answer(
-        text=LEXICON_HI["number_request"], reply_markup=inline_keyboards.number_request
-    )
-    await state.set_state(FSMprofile.number_request)
+repeat_use_window = Window(
+    Format("С возвращением {name_user}."),
+    getter=name_user_getter,
+    state=states.Begin_use.REPEAT_MAIN,
+)
 
 
-@router.message(StateFilter(FSMprofile.name_request))
-async def warning_name(message: Message, state: FSMContext):
-    await message.delete()
-    await message.answer(text=LEXICON_HI["warning_name"])
-    await state.set_state(FSMprofile.name_request)
-
-
-@router.callback_query(F.data == "yes_number", StateFilter(FSMprofile.number_request))
-async def yes_number(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer(text=LEXICON_HI["yes_number"])
-    await callback.answer()
-    await state.set_state(FSMprofile.number_request)
-
-
-@router.message(F.text, StateFilter(FSMprofile.number_request))
-async def number_save(message: Message, state: FSMContext):
-    # Сохраняем номер в базу и перводим на следующий шаг
-    # следующий шаг
-    await message.answer(text=LEXICON_HI["main_menu"], reply_markup=main_menu_kb)
-    await state.clear()
-
-
-@router.callback_query(F.data == "no_number", StateFilter(FSMprofile.number_request))
-async def yes_number(callback: CallbackQuery, state: FSMContext):
-    # Сохраняем то что пользователь отказался оставлять номер и перводим на следующий шаг
-    # следующий шаг
-    await callback.message.answer(
-        text=LEXICON_HI["main_menu"], reply_markup=main_menu_kb
-    )
-    await state.clear()
-
-
-@router.message(StateFilter(FSMprofile.number_request))
-async def warning_number(message: Message, state: FSMContext):
-    await message.delete()
-    await message.answer(text=LEXICON_HI["warning_number"])
-    await state.set_state(FSMprofile.number_request)
-
-
-# # Хэндлер на команду /help
-# @router.message(Command(commands='help'))
-# async def process_help(message:Message):
-#     await message.answer(text=LEXICON_HI["help"])
-
-
-# # Хэндлер на команду /contacts
-# @router.message(Command(commands='contacts'))
-# async def process_contacts(message:Message):
-#     await message.answer(text=LEXICON_HI["contacts"])
+begin_use_dialog = Dialog(begin_use_window, repeat_use_window)
