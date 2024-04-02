@@ -6,10 +6,8 @@ class Begin_use(StatesGroup):
     INPUT_NUMBER = State()
     MAIN_MENU = State()
     OUR_CONTACTS = State()
+    MY_APPOINTMENTS = State()
 
 class Sign_up(StatesGroup):
     MAIN = State()
-
-
-class My_appointment(StatesGroup):
-    MAIN = State()
+    CONFIRM_SIGN = State()

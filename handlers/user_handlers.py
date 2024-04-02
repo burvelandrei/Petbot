@@ -14,6 +14,7 @@ from keyboards import inline_keyboards
 from keyboards.keyboards import main_menu_kb
 from lexicon.lexicon import LEXICON_HI
 from config_bd.users import SQL
+from config_bd.date_apointment import SQL_D_A
 
 # Нужно написать два фильтра, для фильтрации имени и номера!!!!!
 
@@ -87,6 +88,17 @@ async def phone_number_getter(dialog_manager: DialogManager, **kwargs):
     return {"phone_number": phone_number}
 
 
+async def appointments_getter(dialog_manager: DialogManager, **kwargs):
+    date_app_bd = SQL_D_A()
+    tg_id = dialog_manager.start_data["tg_id"]
+    appoint_bd = date_app_bd.SELECT_apointment(tg_id)
+    print(appoint_bd)
+    appointments_out = ""
+    for number in range(len(appoint_bd)):
+        appointments_out += f"{number+1}. Дата - {appoint_bd[number][1]}\n"
+    return {"appointments": appointments_out}
+
+
 begin_use_window = Window(
     Format(
         "Привет {name_user}.\n"
@@ -117,7 +129,12 @@ input_number_window = Window(
         on_success=correct_phone_number,  # пока отлавливаем только не текст, надо придумать функцию которая будет выбивать неправильный номер
         # on_error=error_age_handler,
     ),
-    SwitchTo(Const("Назад в Меню"), id="back_menu", state=states.Begin_use.MAIN_MENU, when="phone_number"),
+    SwitchTo(
+        Const("Назад в Меню"),
+        id="back_menu",
+        state=states.Begin_use.MAIN_MENU,
+        when="phone_number",
+    ),
     MessageInput(func=no_text, content_types=ContentType.ANY),
     getter=phone_number_getter,
     state=states.Begin_use.INPUT_NUMBER,
@@ -128,8 +145,10 @@ main_menu_window = Window(
     Const("Главное меню"),
     Group(
         Start(Const("Записаться"), id="sign_up", state=states.Sign_up.MAIN),
-        Start(
-            Const("Мои записи"), id="my_appointment", state=states.My_appointment.MAIN
+        SwitchTo(
+            Const("Мои записи"),
+            id="my_appointment",
+            state=states.Begin_use.MY_APPOINTMENTS,
         ),
         SwitchTo(
             Const("Наши контакты"),
@@ -147,17 +166,25 @@ main_menu_window = Window(
 )
 
 
-our_contacts_window = Window(Const("Наши контакты:\n"
-                                   "Адресс - \n"
-                                   "Телефоны - \n"),
-                                   SwitchTo(Const("Назад в Меню"), id="back_menu", state=states.Begin_use.MAIN_MENU),
-                                   state=states.Begin_use.OUR_CONTACTS)
+our_contacts_window = Window(
+    Const("Наши контакты:\n" "Адресс - \n" "Телефоны - \n"),
+    SwitchTo(Const("Назад в Меню"), id="back_menu", state=states.Begin_use.MAIN_MENU),
+    state=states.Begin_use.OUR_CONTACTS,
+)
 
+
+my_appointments_window = Window(
+    Format("Мои записи\n" "{appointments}"),
+    SwitchTo(Const("Назад в Меню"), id="back_menu", state=states.Begin_use.MAIN_MENU),
+    getter=appointments_getter,
+    state=states.Begin_use.MY_APPOINTMENTS,
+)
 
 begin_use_dialog = Dialog(
     begin_use_window,
     repeat_use_window,
     input_number_window,
     main_menu_window,
-    our_contacts_window
+    our_contacts_window,
+    my_appointments_window,
 )
