@@ -79,6 +79,14 @@ async def name_user_getter(dialog_manager: DialogManager, **kwargs):
     return {"name_user": name_user}
 
 
+async def phone_number_getter(dialog_manager: DialogManager, **kwargs):
+    s = SQL()
+    tg_id = dialog_manager.start_data["tg_id"]
+    user_db = s.SELECT_USER(tg_id)
+    phone_number = user_db[4]
+    return {"phone_number": phone_number}
+
+
 begin_use_window = Window(
     Format(
         "Привет {name_user}.\n"
@@ -109,7 +117,9 @@ input_number_window = Window(
         on_success=correct_phone_number,  # пока отлавливаем только не текст, надо придумать функцию которая будет выбивать неправильный номер
         # on_error=error_age_handler,
     ),
+    SwitchTo(Const("Назад в Меню"), id="back_menu", state=states.Begin_use.MAIN_MENU, when="phone_number"),
     MessageInput(func=no_text, content_types=ContentType.ANY),
+    getter=phone_number_getter,
     state=states.Begin_use.INPUT_NUMBER,
 )
 
@@ -136,9 +146,18 @@ main_menu_window = Window(
     state=states.Begin_use.MAIN_MENU,
 )
 
+
+our_contacts_window = Window(Const("Наши контакты:\n"
+                                   "Адресс - \n"
+                                   "Телефоны - \n"),
+                                   SwitchTo(Const("Назад в Меню"), id="back_menu", state=states.Begin_use.MAIN_MENU),
+                                   state=states.Begin_use.OUR_CONTACTS)
+
+
 begin_use_dialog = Dialog(
     begin_use_window,
     repeat_use_window,
     input_number_window,
     main_menu_window,
+    our_contacts_window
 )
