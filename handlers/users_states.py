@@ -10,4 +10,5 @@ class Begin_use(StatesGroup):
 
 class Sign_up(StatesGroup):
     MAIN = State()
+    SELECT_TIME = State()
     CONFIRM_SIGN = State()
