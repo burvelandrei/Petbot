@@ -31,14 +31,13 @@ async def on_date_clicked(
     selected_date: datetime.date,
     /,
 ):
-    # date_app_bd = SQL_D_A()
-    # tg_id = callback.from_user.id
-    # date_app_bd.INSERT(tg_id, str(selected_date))
     dialog_manager.dialog_data["date"] = str(selected_date)
     await dialog_manager.switch_to(states.Sign_up.SELECT_TIME)
 
 
-async def on_time_clicked(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, text: str):
+async def on_time_clicked(
+    callback: CallbackQuery, button: Button, dialog_manager: DialogManager, text: str
+):
     date = dialog_manager.dialog_data["date"]
     all_time = f"{date} {text}"
     date_app_bd = SQL_D_A()
@@ -48,7 +47,6 @@ async def on_time_clicked(callback: CallbackQuery, button: Button, dialog_manage
     await dialog_manager.switch_to(states.Sign_up.CONFIRM_SIGN)
 
 
-
 async def all_time_getter(dialog_manager: DialogManager, **kwargs):
     return {"all_time": dialog_manager.dialog_data["all_time"]}
 
@@ -56,8 +54,17 @@ async def all_time_getter(dialog_manager: DialogManager, **kwargs):
 sign_up_window = Window(
     Const("Выберите день записи"),
     Calendar(id="calendar", on_click=on_date_clicked),
+    MAIN_MENU_BUTTON,
     state=states.Sign_up.MAIN,
 )
+
+
+select_time_window = Window(
+    Const("Выберите время для записи"),
+    SwitchTo(Const("Назад"), id="back_menu_date", state=states.Sign_up.MAIN),
+    state=states.Sign_up.SELECT_TIME,
+)
+
 
 confirm_sign_window = Window(
     Format("Вы записаны на {all_time}"),
@@ -67,4 +74,4 @@ confirm_sign_window = Window(
 )
 
 
-sign_up_dialog = Dialog(sign_up_window, confirm_sign_window)
+sign_up_dialog = Dialog(sign_up_window, select_time_window, confirm_sign_window)
