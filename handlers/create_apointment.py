@@ -14,6 +14,7 @@ from aiogram_dialog.widgets.kbd import (
     Group,
     Calendar,
     ManagedCalendar,
+    Select,
 )
 from aiogram_dialog.widgets.input import TextInput, MessageInput, ManagedTextInput
 
@@ -36,15 +37,41 @@ async def on_date_clicked(
 
 
 async def on_time_clicked(
-    callback: CallbackQuery, button: Button, dialog_manager: DialogManager, text: str
+    callback: CallbackQuery, widget: Select, dialog_manager: DialogManager, item_id: str
 ):
+    print(item_id)
     date = dialog_manager.dialog_data["date"]
-    all_time = f"{date} {text}"
+    all_time = f"{date} {item_id}"
     date_app_bd = SQL_D_A()
     tg_id = callback.from_user.id
     date_app_bd.INSERT(tg_id, all_time)
     dialog_manager.dialog_data.update({"all_time": all_time})
     await dialog_manager.switch_to(states.Sign_up.CONFIRM_SIGN)
+
+
+async def select_time_getter(**kwargs):
+    times = [
+        ["9:00"],
+        ["9:30"],
+        ["10:00"],
+        ["10:30"],
+        ["11:00"],
+        ["11:30"],
+        ["12:00"],
+        ["12:30"],
+        ["13:00"],
+        ["13:30"],
+        ["14:00"],
+        ["14:30"],
+        ["15:00"],
+        ["15:30"],
+        ["16:00"],
+        ["16:30"],
+        ["17:00"],
+        ["17:30"],
+        ["18:00"],
+    ]
+    return {"times": times}
 
 
 async def all_time_getter(dialog_manager: DialogManager, **kwargs):
@@ -61,7 +88,18 @@ sign_up_window = Window(
 
 select_time_window = Window(
     Const("Выберите время для записи"),
+    Group(
+        Select(
+            Format("{item[0]}"),
+            id="times",
+            item_id_getter=lambda x: x[0],
+            items="times",
+            on_click=on_time_clicked,
+        ),
+        width=4,
+    ),
     SwitchTo(Const("Назад"), id="back_menu_date", state=states.Sign_up.MAIN),
+    getter=select_time_getter,
     state=states.Sign_up.SELECT_TIME,
 )
 
