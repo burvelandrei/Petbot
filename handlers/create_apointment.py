@@ -25,6 +25,10 @@ from config_bd.users import SQL
 from config_bd.date_apointment import SQL_D_A
 
 
+BEGIN_WORK = 9
+END_WORK = 18
+
+
 async def on_date_clicked(
     callback: ChatEvent,
     widget: ManagedCalendar,
@@ -50,27 +54,15 @@ async def on_time_clicked(
 
 
 async def select_time_getter(**kwargs):
-    times = [
-        ["9:00"],
-        ["9:30"],
-        ["10:00"],
-        ["10:30"],
-        ["11:00"],
-        ["11:30"],
-        ["12:00"],
-        ["12:30"],
-        ["13:00"],
-        ["13:30"],
-        ["14:00"],
-        ["14:30"],
-        ["15:00"],
-        ["15:30"],
-        ["16:00"],
-        ["16:30"],
-        ["17:00"],
-        ["17:30"],
-        ["18:00"],
-    ]
+    times = []
+    for time in range(BEGIN_WORK, END_WORK+1):
+        if time != END_WORK:
+            print(time)
+            print(datetime.time(hour=time, minute=0))
+            times.append([datetime.time(hour=time, minute=0), f"{time}:00"])
+            times.append([datetime.time(hour=time, minute=30), f"{time}:30"])
+        else:
+            times.append([datetime.time(hour=time, minute=0), f"{time}:00"])
     return {"times": times}
 
 
@@ -90,7 +82,7 @@ select_time_window = Window(
     Const("Выберите время для записи"),
     Group(
         Select(
-            Format("{item[0]}"),
+            Format("{item[1]}"),
             id="times",
             item_id_getter=lambda x: x[0],
             items="times",
