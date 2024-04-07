@@ -95,7 +95,9 @@ async def appointments_getter(dialog_manager: DialogManager, **kwargs):
     print(appoint_bd)
     appointments_out = ""
     for number in range(len(appoint_bd)):
-        appointments_out += f"{number+1}. Дата - {appoint_bd[number][1]}\n"
+        time = appoint_bd[number][1].strftime("%H:%M")
+        date = appoint_bd[number][1].strftime("%d/%m/%Y")
+        appointments_out += f"{number+1}. Дата - {date}, Время - {time}\n"
     return {"appointments": appointments_out}
 
 
